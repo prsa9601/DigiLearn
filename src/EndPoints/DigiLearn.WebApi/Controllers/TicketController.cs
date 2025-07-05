@@ -1,4 +1,5 @@
 ﻿using DigiLearn.WebApi.Infrastructure;
+using DigiLearn.WebApi.Models.Ticket;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -19,15 +20,30 @@ namespace DigiLearn.WebApi.Controllers
         }
 
         [HttpPost("CreateTicket")]
-        public async Task<ApiResult<Guid>> CreateTicket(CreateTicketCommand command)
+        public async Task<ApiResult<Guid>> CreateTicket(CreateTicketViewModel command)
         {
-            var result = await _service.CreateTicket(command);
+            var result = await _service.CreateTicket(
+                new CreateTicketCommand
+                {
+                    OwnerFullName = command.OwnerFullName,
+                    PhoneNumber = command.PhoneNumber,
+                    Text = command.Text,
+                    Title = command.Title,
+                    UserId = User.GetUserId(),
+                });
             return CommandResult<Guid>(result);
         }
         [HttpPost("SendTicketMessage")]
-        public async Task<ApiResult> SendMessageInTicket(SendTicketMessageCommand command)
+        public async Task<ApiResult> SendMessageInTicket(SendTicketMessageViewModel command)
         {
-            var result = await _service.SendMessageInTicket(command);
+            var result = await _service.SendMessageInTicket(
+                new SendTicketMessageCommand
+                {
+                    OwnerFullName = command.OwnerFullName,
+                    Text = command.Text,
+                    TicketId = command.TicketId,
+                    UserId = User.GetUserId(),
+                });
             return CommandResult(result);
         }
         [HttpPost("CloseTicket")]

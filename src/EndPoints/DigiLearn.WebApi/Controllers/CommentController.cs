@@ -3,6 +3,7 @@ using BlogModule.Services.DTOs.Query;
 using CommentModule.Services;
 using CommentModule.Services.DTOs;
 using DigiLearn.WebApi.Infrastructure;
+using DigiLearn.WebApi.Models.Comment;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -21,9 +22,16 @@ namespace DigiLearn.WebApi.Controllers
 
 
         [HttpPost("CreateComment")]
-        public async Task<ApiResult> CreateComment(CreateCommentCommand command)
+        public async Task<ApiResult> CreateComment(CreateCommentViewModel command)
         {
-            return CommandResult(await _service.CreateComment(command));
+            return CommandResult(await _service.CreateComment(new CreateCommentCommand
+            {
+                CommentType = command.CommentType,
+                ParentId = command.ParentId,
+                EntityId = command.EntityId,
+                Text = command.Text,
+                UserId = User.GetUserId(),
+            }));
         }
 
         [HttpDelete("DeleteComment")]

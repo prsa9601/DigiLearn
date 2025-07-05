@@ -2,9 +2,12 @@
 using BlogModule.Services.DTOs.Command;
 using BlogModule.Services.DTOs.Query;
 using DigiLearn.WebApi.Infrastructure;
+using DigiLearn.WebApi.Infrastructure.Security;
+using DigiLearn.WebApi.Models.Blog;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Permissions;
 
 namespace DigiLearn.WebApi.Controllers
 {
@@ -22,9 +25,18 @@ namespace DigiLearn.WebApi.Controllers
         #region Blog
         [Authorize]
         [HttpPost("CreatePost")]
-        public async Task<ApiResult> CreatePost([FromForm] CreatePostCommand command)
+        public async Task<ApiResult> CreatePost([FromForm] CreatePostViewModel command)
         {
-            return CommandResult(await _service.CreatePost(command));
+            return CommandResult(await _service.CreatePost(new CreatePostCommand
+            {
+                CategoryId = command.CategoryId,
+                ImageFile = command.ImageFile,
+                Description = command.Description,
+                Slug = command.Slug,
+                OwnerName = command.OwnerName,
+                Title = command.Title,
+                UserId = User.GetUserId()
+            }));
         }
 
         [HttpPatch("EditPost")]
@@ -58,7 +70,8 @@ namespace DigiLearn.WebApi.Controllers
             return QueryResult(await _service.GetPostBySlug(slug));
         }
         [HttpGet("GetPostsByFilter")]
-        public async Task<ApiResult<BlogPostFilterResult>> GetPostsByFilter([FromQuery]BlogPostFilterParams filterParams)
+        public async Task<ApiResult<BlogPostFilterResult>> GetPostsByFilter(
+            [FromQuery] BlogPostFilterParams filterParams)
         {
             return QueryResult(await _service.GetPostsByFilter(filterParams));
         }

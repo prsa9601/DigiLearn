@@ -1,4 +1,4 @@
-﻿namespace DigiLearn.WebApi.Models
+﻿namespace DigiLearn.WebApi.Models.Auth
 {
     public class LoginResultDto
     {

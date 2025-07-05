@@ -2,7 +2,6 @@
 using Common.Application.SecurityUtil;
 using DigiLearn.WebApi.Infrastructure;
 using DigiLearn.WebApi.Infrastructure.JwtUtils;
-using DigiLearn.WebApi.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
@@ -22,6 +21,10 @@ using UserModule.Core.Services;
 using UserModule.Data.Entities.Roles;
 using UserModule.Core.Commands.Notifications.DeleteAll;
 using UserModule.Core.Commands.Notifications.Seen;
+using DigiLearn.WebApi.Models.Auth;
+using DigiLearn.WebApi.Models.User;
+using DigiLearn.WebApi.Models.User.Notification;
+using DigiLearn.WebApi.Infrastructure.Security;
 
 namespace DigiLearn.WebApi.Controllers
 {
@@ -78,30 +81,54 @@ namespace DigiLearn.WebApi.Controllers
         #region User
         [HttpPatch("EditUserProfile")]
         [Authorize]
-        public async Task<ApiResult> EditUserProfile(EditUserCommand command)
+        public async Task<ApiResult> EditUserProfile(EditUserViewModel command)
         {
-            return CommandResult(await _facade.EditUserProfile(command));
+            return CommandResult(await _facade.EditUserProfile(new EditUserCommand
+            {
+                Email = command.Email,
+                Family = command.Family,
+                Name = command.Name,
+                UserId = User.GetUserId(),
+            }));
         }
 
         [HttpPatch("EditUser")]
         [Authorize]
-        public async Task<ApiResult> EditUser(FullEditUserCommand command)
+        public async Task<ApiResult> EditUser(FullEditUserViewModel command)
         {
-            return CommandResult(await _facade.EditUser(command));
+            return CommandResult(await _facade.EditUser(new FullEditUserCommand
+            {
+                Email = command.Email,
+                Family = command.Family,
+                Name = command.Name,
+                Password = command.Password,
+                PhoneNumber = command.PhoneNumber,
+                Roles = command.Roles,
+                UserId = User.GetUserId()
+            }));
         }
 
         [HttpPatch("ChangeAvatar")]
         [Authorize]
-        public async Task<ApiResult> ChangeAvatar(ChangeUserAvatarCommand command)
+        public async Task<ApiResult> ChangeAvatar(ChangeUserAvatarViewModel command)
         {
-            return CommandResult(await _facade.ChangeAvatar(command));
+            return CommandResult(await _facade.ChangeAvatar(new ChangeUserAvatarCommand
+            {
+                AvatarFile = command.AvatarFile,
+                UserId = User.GetUserId()
+            }));
         }
 
         [HttpPatch("ChangeUserPassword")]
         [Authorize]
-        public async Task<ApiResult> ChangePassword(ChangeUserPasswordCommand command)
+        public async Task<ApiResult> ChangePassword(ChangeUserPasswordViewModel command)
         {
-            return CommandResult(await _facade.ChangePassword(command));
+            return CommandResult(await _facade.ChangePassword(new ChangeUserPasswordCommand
+            {
+                CurrentPassword = command.CurrentPassword,
+                NewPassword = command.NewPassword,
+                UserId = User.GetUserId()
+            }));
         }
 
         /// <summary>
@@ -113,18 +140,22 @@ namespace DigiLearn.WebApi.Controllers
         /// </example>
         /// <returns></returns>
         [HttpGet("GetUserByPhoneNumber")]
+        [Authorize]
         public async Task<ApiResult<UserDto?>> GetUserByPhoneNumber(string phoneNumber)
         {
             return QueryResult(await _facade.GetUserByPhoneNumber(phoneNumber));
         }
 
         [HttpGet("GetUserById")]
-        public async Task<ApiResult<UserDto?>> GetUserById(Guid userId)
+        [Authorize]
+        public async Task<ApiResult<UserDto?>> GetUserById()
         {
-            return QueryResult(await _facade.GetById(userId));
+            return QueryResult(await _facade.GetById(User.GetUserId()));
         }
 
         [HttpGet("GetUserByFilter")]
+        [Authorize]
+        [PermissionChecker(UserModule.Data.Entities._Enums.Permissions.مدیریت_کاربران)]
         public async Task<ApiResult<UserFilterResult>> GetUserByFilter(UserFilterParams filterParams)
         {
             return QueryResult(await _facade.GetByFilter(filterParams));
@@ -170,37 +201,54 @@ namespace DigiLearn.WebApi.Controllers
         #endregion
 
         #region Notification   
-       
+
         [HttpPost("CreateNotification")]
-        public async Task<ApiResult> CreateNotification(CreateNotificationCommand command)
+        public async Task<ApiResult> CreateNotification(CreateNotificationViewModel command)
         {
-            return CommandResult(await _notificationFacade.Create(command));
+            return CommandResult(await _notificationFacade.Create(new CreateNotificationCommand
+            {
+                Text = command.Title,
+                Title = command.Title,
+                UserId = User.GetUserId()
+            }));
         }
-        
+
         [HttpDelete("DeleteNotification")]
-        public async Task<ApiResult> DeleteNotification(DeleteNotificationCommand command)
+        [Authorize]
+        public async Task<ApiResult> DeleteNotification(DeleteNotificationViewModel command)
         {
-            return CommandResult(await _notificationFacade.Delete(command));
+            return CommandResult(await _notificationFacade.Delete(
+                new DeleteNotificationCommand(command.NotificationId, User.GetUserId())));
         }
-        
+
         [HttpDelete("DeleteAll")]
-        public async Task<ApiResult> DeleteAllNotification(DeleteAllNotificationCommand command)
+        [Authorize]
+        public async Task<ApiResult> DeleteAllNotification()
         {
-            return CommandResult(await _notificationFacade.DeleteAll(command));
+            return CommandResult(await _notificationFacade.DeleteAll(
+                new DeleteAllNotificationCommand(User.GetUserId())));
         }
-        
+
         [HttpPatch("SeenNotification")]
         public async Task<ApiResult> SeenNotification(SeenNotificationCommand command)
         {
             return CommandResult(await _notificationFacade.Seen(command));
         }
-        
+
         [HttpGet("GetNotificationByFilter")]
-        public async Task<ApiResult<NotificationFilterResult>> GetNotificationByFilter(NotificationFilterParams filterParams)
+        public async Task<ApiResult<NotificationFilterResult>> GetNotificationByFilter(
+            NotificationFilterParamsViewModel filterParams)
         {
-            return QueryResult(await _notificationFacade.GetByFilter(filterParams));
+            return QueryResult(await _notificationFacade.GetByFilter(
+                new NotificationFilterParams
+                {
+                    IsSeen = filterParams.IsSeen,
+                    PageId = filterParams.PageId,
+                    Take = filterParams.Take,
+                    UserId = User.GetUserId()
+                }));
         }
-        
+
         #endregion
 
     }

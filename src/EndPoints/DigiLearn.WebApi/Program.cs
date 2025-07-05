@@ -19,33 +19,8 @@ using DigiLearn.WebApi.Infrastructure.JwtUtils;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 
-//builder.Services.AddControllers()
-//    .ConfigureApiBehaviorOptions(option =>
-//    {
-//        option.InvalidModelStateResponseFactory = (context =>
-//        {
-//            var result = new ApiResult()
-//            {
-//                IsSuccess = false,
-//                MetaData = new()
-//                {
-//                    AppStatusCode = AppStatusCode.BadRequest,
-//                    Message = ModelStateUtil.GetModelStateErrors(context.ModelState)
-//                }
-//            };
-//            return new BadRequestObjectResult(result);
-//        });
-//    });
-builder.Services.AddControllers(options => // تغییرات در این بخش
-{
-    // افزودن فیلتر جهانی [Authorize]
-    var policy = new AuthorizationPolicyBuilder()
-        .RequireAuthenticatedUser()
-        .Build();
-    options.Filters.Add(new AuthorizeFilter(policy));
-})
+builder.Services.AddControllers()
 .ConfigureApiBehaviorOptions(option =>
 {
     option.InvalidModelStateResponseFactory = (context) =>
@@ -124,7 +99,6 @@ builder.Services
     .InitCoreModule(builder.Configuration)
     .InitBlogModule(builder.Configuration)
     .InitCommentModule(builder.Configuration)
-    .InitCommentModule(builder.Configuration)
     .InitTransactionModule(builder.Configuration)
     .RegisterWebDependencies();
 
@@ -134,7 +108,13 @@ builder.Services
 builder.Services.AddJwtAuthentication(builder.Configuration);
 
 #endregion
-
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll",
+        builder => builder.AllowAnyOrigin()
+                          .AllowAnyMethod()
+                          .AllowAnyHeader());
+});
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -150,18 +130,19 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
+
+app.UseCors("AllowAll");
+
 app.UseApiCustomExceptionHandler();
 app.MapControllers();
 
-app.UseSwagger();
-app.UseSwaggerUI(options =>
+if (app.Environment.IsDevelopment())
 {
-    // تغییر مسیر به صورت زیر:
-    options.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
-});
-//app.UseSwaggerUI(options =>
-//{
-//    options.SwaggerEndpoint("/DigiLearn.Api/swagger/v1/swagger.json", "My API V1");
-//});
+    app.UseSwagger();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
+    });
+}
 
 app.Run();

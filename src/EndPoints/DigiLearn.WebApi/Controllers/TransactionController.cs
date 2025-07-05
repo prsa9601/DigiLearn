@@ -1,4 +1,6 @@
 ﻿using DigiLearn.WebApi.Infrastructure;
+using DigiLearn.WebApi.Models.Transaction;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using TransactionModule.Domain;
@@ -20,11 +22,18 @@ namespace DigiLearn.WebApi.Controllers
         }
         #region Commands
         [HttpPost("CreateTransaction")]
-        public async Task<ApiResult<Guid>> CreateTransaction(CreateTransactionCommand command)
+        public async Task<ApiResult<Guid>> CreateTransaction(CreateTransactionViewModel command)
         {
             try
             {
-                Guid transactionId = await _service.CreateTransaction(command);
+                Guid transactionId = await _service.CreateTransaction(new CreateTransactionCommand
+                {
+                    LinkId = command.LinkId,
+                    PaymentAmount = command.PaymentAmount,
+                    PaymentGateway = command.PaymentGateway,
+                    TransactionFor = command.TransactionFor,
+                    UserId = User.GetUserId(),
+                });
                 return CommandResult<Guid>(new Common.Application.OperationResult<Guid>
                 {
                     Message = "عملیات با موفقیت انجام شد.",
@@ -96,7 +105,7 @@ namespace DigiLearn.WebApi.Controllers
 
         #region Queries
 
-        
+
         /// <example>
         /// نمونه ریکوئست  => api/Transaction/GetTransactionById?{transactionId}
         /// </example>
@@ -107,10 +116,26 @@ namespace DigiLearn.WebApi.Controllers
         }
 
         [HttpGet("GetTransactionsByFilter")]
+        [AllowAnonymous]
         public async Task<ApiResult<UserTransactionFilterDto>> GetTransactionsByFilter
-            ([FromQuery] UserTransactionFilterParams queryParams)
+            ([FromQuery] UserTransactionFilterParamsViewModel queryParams)
         {
-            return QueryResult(await _service.GetTransactionsByFilter(queryParams));
+            return QueryResult(await _service.GetTransactionsByFilter(
+                new UserTransactionFilterParams
+                {
+                    EndDate = queryParams.EndDate,
+                    StartDate = queryParams.StartDate,
+                    PageId = queryParams.PageId,
+                    Status = queryParams.Status,
+                    Take = queryParams.Take,
+                    TransactionFor = queryParams.TransactionFor,
+                    UserId = (User.Identity != null && User.Identity.IsAuthenticated) ? 
+                    User.GetUserId() : null,
+                    //این میگه که identity مقدارش null نیست
+                    //و اگه یه وقتی identity null باشه خطا
+                    //NullReferenceException میده 
+                    //UserId = User.Identity!.IsAuthenticated ? User.GetUserId() : null,
+                }));
         }
 
         [HttpGet("GetCancelTransactionsCount")]

@@ -5,21 +5,16 @@ namespace DigiLearn.WebApi.Infrastructure;
 
 public static class ClaimUtils
 {
-    public static long GetUserId(this ClaimsPrincipal principal)
+    public static Guid GetUserId(this ClaimsPrincipal principal)
     {
         if (principal == null)
             throw new ArgumentNullException(nameof(principal));
 
-        return Convert.ToInt64(principal.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+        var idClaim = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        return Guid.TryParse(idClaim, out var userId) ? userId
+            : throw new InvalidOperationException("Invalid GUID format.");
     }
-    public static string GetUserIdToString(this ClaimsPrincipal principal)
-    {
-        if (principal == null)
-            throw new ArgumentNullException(nameof(principal));
 
-        //return Convert.ToString(principal.FindFirst(ClaimTypes.NameIdentifier)?.Value);
-        return Convert.ToString(principal.FindFirst(ClaimTypes.NameIdentifier)?.Value)!;
-    }
     public static string GetUserName(this ClaimsPrincipal principal)
     {
         if (principal == null)
